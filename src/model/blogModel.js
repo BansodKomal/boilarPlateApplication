@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-
+const ObjectId = mongoose.Schema.Types.ObjectId
 const UserSchema = new mongoose.Schema({
 
 title:{
@@ -8,11 +8,11 @@ title:{
 body:{
     type:String
 },
-updatedBy:{
-    type:String
-},
-createdBy:{
-    type:String
+userId:{
+    type:ObjectId,
+    required:true,
+     ref:"User"
+
 }
  },  { timestamps: true }
 )

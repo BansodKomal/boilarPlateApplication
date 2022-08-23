@@ -1,5 +1,6 @@
 const UserModel = require("../model/userModel")
 const jwt = require("jsonwebtoken")
+const constant= require("../constant.js")
 
 const isValid = function (value) {
     if (typeof value == undefined || value == null) return false
@@ -28,7 +29,10 @@ const signUpUser = async function (req, res) {
             if (!(/^\w+([\.-]?\w+)@\w+([\.-]?\w+)(\.\w{2,3})+$/.test(email)))
                 return res.status(400).send({ status: false, msg: " Plz Provide valid email" })
 
-
+                alreadyExistAccount = await UserModel.findOne({ email: email, password:password })
+                if (alreadyExistAccount){
+                    return res.constant.httpCodes.HTTP_ALREADY_EXISTS.send({status:false, msg:constant.messages.SIGNUP.ALREADY_EXISTS})
+                }
         let alreadyExistEmail = await UserModel.findOne({ email: email })
         if (alreadyExistEmail) {
             return res.status(409).send({ status: false, msg: "email already exit" })
@@ -52,6 +56,7 @@ const signUpUser = async function (req, res) {
                 return res.status(400).send({ status: false, msg: "Please Enter  a Valid Phone Number" })
     }
 
+    
   const alreadyExsit = await UserModel.findOne({ phone: phone })
         if (alreadyExsit) {
             return res.status(409).send({ status: false, msg: "phone already exit" })
