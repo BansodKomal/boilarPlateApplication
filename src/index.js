@@ -14,12 +14,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 
 
-mongoose.connect("mongodb+srv://KomalBansod:3DK49mFSm2FA717W@cluster0.zvwlork.mongodb.net/boilerPlate", {useNewUrlParser: true})
+mongoose.connect(process.env.db, {useNewUrlParser: true})
     .then(() => console.log('MongoDb Connected'))
     .catch(err => console.log(err))
 
 app.use('/', route);
 
-app.listen(process.env.PORT || 3000, function() {
-	console.log('Express app running on port ' + (process.env.PORT || 3000))
+app.listen(process.env.port, function() {
+	console.log('Express app running on port ' + (process.env.port))
 });

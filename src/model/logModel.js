@@ -2,11 +2,16 @@ const mongoose = require('mongoose');
 const ObjectId = mongoose.Schema.Types.ObjectId
 const logSchema = new mongoose.Schema({
 date:{
-    type:Date
+    type:Date,
+    default:Date.now
 }, 
+api:{
+type:String,
+
+},
 userId:{
     type:ObjectId,
-    required:true,
+   // required:true,
      ref:"User"
 
 }

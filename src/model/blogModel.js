@@ -13,7 +13,9 @@ userId:{
     required:true,
      ref:"User"
 
-}
+},
+isDelete:{type:Boolean,
+    default :false}
  },  { timestamps: true }
 )
 

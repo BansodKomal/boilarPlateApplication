@@ -1,140 +1,162 @@
 const blogModel = require("../model/blogModel")
 const userModel = require("../model/userModel")
+const constant = require("../constant.js")
+const log = require("../middleware/logMiddleware")
 
 const mongoose = require('mongoose')
 
-
+const objectId = (value, helpers) => {
+    if (!value.match(/^[0-9a-fA-F]{24}$/)) {
+        return helpers.message('"{{#label}}" must be a valid mongo id');
+    }
+    return value;
+};
 
 const isValid = function (value) {
-    if (typeof value == undefined || value == null || value.length == 0) return false
+    if (typeof value == undefined || value == null) return false
     if (typeof value === 'string' && value.trim().length === 0) return false
+
     return true
 
-}
-const isValidObjectId = function (ObjectId) {
-    return mongoose.Types.ObjectId.isValid(ObjectId)
 }
 const isValidRequestBody = function (requestBody) {
     return Object.keys(requestBody).length > 0
 }
-const createBlog = async function (req,res){
+const isValidObjectId = function (ObjectId) {
+    return mongoose.Types.ObjectId.isValid(ObjectId)
+}
+const createBlog = async function (req, res) {
     try {
-       let data = req.body
-      const {title,userId,body} = data
-      console.log(data)
-      let isValidUser = await userModel.findById(userId)
-      console.log(isValidUser)
+       let userId1 = req.params.userId
+      //  console.log(userId)
+      console.log(req)
+        let data = req.body
+        const { title, body,  userId } = data
+
+        if (!isValid(userId)) {
+            return res.status(constant.httpCodes.HTTP_BAD_REQUEST).send({ status: false, message: constant.messages.USER.VALID, data: null })
+        }
+
+
+
+        if (!isValidObjectId(userId)) {
+            return res.status(constant.httpCodes.HTTP_BAD_REQUEST).send({ status: false, message: constant.messages.BLOG.VALIDID, data: null })
+        }
+   const isValidUser = await userModel.findById(userId)
         if (!isValidUser) {
-            return res.status(400).send({ status: false, msg: "you are not allow to create the data ! .. token is Wrong" })
+            return res.status(constant.httpCodes.HTTP_BAD_REQUEST).send({ status: false, message: constant.messages.BLOG.ABCENTID, data: null })
         }
 
-     let userId1 =await userModel.findById(userId).select({email:0,password:0,bphone:0,adress:0})
-        //let data = JSON.parse(JSON.stringify(isValidUser)) 
+           
+            const create = await blogModel.create(data)
+
+            return res.status(constant.httpCodes.NEWLYCREATED).send({ status: true, message: constant.messages.BLOG.SUCCESS, data: create })
+     }
     
-        const create =await blogModel.create(data)
-        return res.status(201).send({status:true, msg:"successfully created",data:create})
-}
- catch (error) {
-    return res.status(500).send({ status: "failed", msg: error.message })
-}
 
-}
-
-
-
-
-
-const updateBLog= async function (req, res) {
-    try {
-        let blogid = req.params.blogId
-        let check = await blogModel.findById(blogid)
-        if (!check) return res.send('not valid id')
-
-        
-        let update = await blogModel.findOneAndUpdate({ _id: blogid }, { new: true })
-
-        let updateBody = req.body
-        let updated = await blogModel.findOneAndUpdate({ _id: blogid }, updateBody, { new: true })
-        res.status(200).send({ msg: updated });
-
-    } catch (err) {
-        return res.status(500).send({ msg: err.mesage })
+    catch (error) {
+        return res.status(constant.httpCodes.HTTP_SERVER_ERROR).send({ status: false, message: error.message })
     }
+
 }
 
 
-const getBlogById = async function (req, res) {
-    try {
-        let blogId = req.params.blogId
 
-        if (!isValid(blogId)) {
-            return res.status(400).send({ status: false, message: "Please , provide blogId in path params" })
 
-        }
+
+const updateBLog = async function (req, res) {
+   try {
+
+        let blogId = req.query.blogId
+        let userId = req.params.userId
+
+        let body1 = req.body
+        const{title, body} = body1
+
         if (!isValidObjectId(blogId)) {
-            return res.status(400).send({ status: false, msg: 'please provide a valid blogId' })
+            return res.status(constant.httpCodes.HTTP_BAD_REQUEST).send({ status: false, message: constant.messages.BLOG.PARAM, data: null })
         }
-        // console.log(eventId)
-        const findBlogId = await blogModel.findById({ _id: blogId })
-        //  console.log(findEvent)
-        return res.status(200).send({ status: true, data: findBlogId })
+        let check = await blogModel.findById(blogId)
 
-    }
+        if (!check) {
+            return res.status(constant.httpCodes.HTTP_BAD_REQUEST).send({ status: false, message: constant.messages.BLOG.ABCENTID, data: null })
+        }
 
+
+
+        let updated = await blogModel.findOneAndUpdate({ _id: blogId }, body1, { new: true })
+        res.status(constant.httpCodes.HTTP_SUCCESS).send({ status: true, message: constant.messages.BLOG.UPDATE, data: updated });
+
+    } 
     catch (err) {
-        res.status(500).send({ status: false, msg: err.message })
+        return res.status(constant.httpCodes.HTTP_SERVER_ERROR).send({ message: err.mesage })
     }
 }
+
+
+
+
 
 
 
 const getBlog = async function (req, res) {
     try {
 
-        const blogId = req.params.blogId
         const queryParams = req.query
-        const { title } = queryParams
-        if (title) {
-            let sortedBlog = await blogModel.find({ blogId: blogId }).sort({ "title": 1 })
-            return res.status(200).send({ status: true, msg: "Sorted Book By Title", data: sortedBlog })
+        const { title, blogId } = queryParams
+        let userId = req.params.userId
+       
+
+        const blog = await blogModel.find()
+        //console.log(blog)
+        if (blogId || title) {
+            let id = await blogModel.findById(blogId)
+            let title1 = await blogModel.find({ title: title })
+            let data = (id || title1)
+            return res.status(constant.httpCodes.HTTP_SUCCESS).send({ status: true, message: constant.messages.BLOG.GETID, data: data })
+        }
+        else {
+            return res.status(constant.httpCodes.HTTP_SUCCESS).send({ status: true, message: constant.messages.BLOG.ALLBLOG, data: blog })
         }
 
-
-
     } catch (error) {
-        return res.status(500).send({ status: "failed", msg: error.message })
+        return res.status(constant.httpCodes.HTTP_SERVER_ERROR).send({ status: false, msg: error.message })
     }
 
 }
 
 const deleteBlogById = async function (req, res) {
     try {
-        let blogId = req.params.blogId
+      
 
-        if (!isValid(blogId)) {
-            return res.status(400).send({ status: false, message: "Please , provide blogId in path params" })
+    let blogId = req.params.blogId
+    console.log(blogId)
+    let userId = req.params.userId
 
-        }
-        if (!isValidObjectId(blogId)) {
-            return res.status(400).send({ status: false, msg: 'please provide a valid blogId' })
-        }
-        // console.log(eventId)
-        const findBlogId = await blogModel.deleteOne({ _id: blogId })
-        //  console.log(findEvent)
-        return res.status(200).send({ status: true, data: findBlogId })
-
+    if (!isValidObjectId(blogId)) {
+        return res.status(constant.httpCodes.HTTP_BAD_REQUEST).send({ status: false, message: constant.messages.BLOG.PARAM, data: null })
     }
+    let ifExit = await blogModel.findById(blogId)
+
+    if (!ifExit) {
+        return res.status(constant.httpCodes.HTTP_BAD_REQUEST).send({ status: false, message: constant.messages.BLOG.ABCENTID, data: null })
+    }
+   const findBlogId = await blogModel.deleteOne(ifExit)
+   if(findBlogId){
+    return res.status(constant.httpCodes.HTTP_SUCCESS).send({ status: true, message: constant.messages.BLOG.DELETE, data: findBlogId })
+
+        }
+        
+
+  
+        
+}
 
     catch (err) {
-        res.status(500).send({ status: false, msg: err.message })
+        res.status(constant.httpCodes.HTTP_SERVER_ERROR).send({ status: false, message: err.message })
     }
+
 }
 
 
-
-
-module.exports.createBlog = createBlog
-module.exports.updateBLog=updateBLog
-module.exports.getBlogById = getBlogById
-module.exports.getBlog = getBlog
-module.exports.deleteBlogById = deleteBlogById
+module.exports = { createBlog, updateBLog, getBlog, deleteBlogById }
